@@ -150,25 +150,30 @@ def process_prediction(prediction):
 
 # --- Main Execution ---
 def main():
-    """Main function to orchestrate the process."""
+    """Main function to orchestrate the process in a loop."""
     # setup_gpio() # Removed GPIO setup call
     picam2 = None # Initialize picam2 variable
 
     try:
-        # Initialize the camera
+        # Initialize the camera (outside the loop)
         print("Initializing camera...")
         picam2 = Picamera2()
 
-        # Capture and process image
-        pil_image = capture_image(picam2)
-        input_data = preprocess_image(pil_image)
+        while True: # Loop indefinitely
+            input("Press Enter to capture and classify...") # Wait for user input
 
-        # Run inference
-        prediction = run_inference(input_data)
+            # Capture and process image
+            pil_image = capture_image(picam2)
+            input_data = preprocess_image(pil_image)
 
-        # Make decision and print result
-        process_prediction(prediction)
+            # Run inference
+            prediction = run_inference(input_data)
 
+            # Make decision and print result
+            process_prediction(prediction)
+
+    except KeyboardInterrupt:
+        print("\nExecution interrupted by user.") # Handle Ctrl+C gracefully
     except ImportError as e:
         print(f"Error importing necessary libraries: {e}")
         print("Please ensure Picamera2, PIL, numpy, and tflite_runtime are installed.") # Removed RPi.GPIO from message
@@ -176,8 +181,6 @@ def main():
     except FileNotFoundError:
         print(f"Error: The model file '{MODEL_PATH}' was not found.")
         print("Please ensure the TFLite model is in the same directory as the script or provide the correct path.")
-    except KeyboardInterrupt:
-        print("Execution interrupted by user.")
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
     finally:
