@@ -2,7 +2,7 @@
 
 """
 Script for Raspberry Pi 5 to capture an image when Enter is pressed,
-classify it using a TFLite model, print the result, and show a live preview using DRM.
+classify it using a TFLite model, print the result, and show a live preview in a Qt window.
 Uses configuration similar to dataset_creator.
 """
 
@@ -10,12 +10,12 @@ import time
 # import RPi.GPIO as GPIO # Removed GPIO import
 from picamera2 import Picamera2, Preview
 from libcamera import Transform # Added Transform
-# from picamera2.previews.qt import QtGlPreview # Removed Qt preview
-# from PyQt5.QtWidgets import QApplication # Removed QApplication
+from picamera2.previews.qt import QtGlPreview # Added back Qt preview
+from PyQt5.QtWidgets import QApplication # Added back QApplication
 from PIL import Image
 import numpy as np
 import tflite_runtime.interpreter as tflite
-import sys # Import sys for error handling
+import sys # Import sys for error handling and QApplication
 
 # --- Configuration ---
 # BUZZER_PIN = 18         # GPIO pin connected to the buzzer (BCM numbering) # Removed Buzzer Pin
@@ -141,9 +141,9 @@ def process_prediction(prediction):
 
 # --- Main Execution ---
 def main():
-    """Main function to orchestrate the process in a loop with DRM preview."""
+    """Main function to orchestrate the process in a loop with Qt preview."""
     # setup_gpio() # Removed GPIO setup call
-    # app = QApplication(sys.argv) # Removed Qt application initialization
+    app = QApplication(sys.argv) # Added back Qt application initialization
     picam2 = None # Initialize picam2 variable
 
     try:
@@ -168,9 +168,9 @@ def main():
         print("Configuring camera...")
         picam2.configure(config)
 
-        # Start the preview window using DRM
-        print("Starting DRM preview...")
-        picam2.start_preview(Preview.DRM)
+        # Start the preview window using QtGL
+        print("Starting Qt preview...")
+        picam2.start_preview(Preview.QTGL)
 
         # Start the camera stream
         print("Starting camera stream...")
@@ -195,9 +195,9 @@ def main():
         print("\nExecution interrupted by user.") # Handle Ctrl+C gracefully
     except ImportError as e:
         print(f"Error importing necessary libraries: {e}")
-        # Removed PyQt5 from the message
-        print("Please ensure Picamera2, PIL, numpy, and tflite_runtime are installed.")
-        print("Example installation: pip install picamera2 Pillow numpy tflite-runtime")
+        # Added back PyQt5 to the message
+        print("Please ensure Picamera2, PyQt5, PIL, numpy, and tflite_runtime are installed.")
+        print("Example installation: pip install picamera2[qt] Pillow numpy tflite-runtime")
     except FileNotFoundError:
         print(f"Error: The model file '{MODEL_PATH}' was not found.")
         print("Please ensure the TFLite model is in the same directory as the script or provide the correct path.")
@@ -217,7 +217,7 @@ def main():
             # Close might implicitly stop/release, but explicit is good practice
             # picam2.close() # Ensure camera resources are released if it was opened
             print("Camera closed/stopped.")
-        # app.quit() # Optional: explicitly quit Qt app if needed
+        app.quit() # Optional: explicitly quit Qt app if needed
         print("Script finished.")
 
 if __name__ == "__main__":
