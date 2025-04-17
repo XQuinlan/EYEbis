@@ -147,8 +147,8 @@ def main():
         # Initialize the camera (outside the loop)
         print("Initializing camera...")
         picam2 = Picamera2()
-        # Configure for preview and capture
-        config = picam2.create_preview_configuration(main={"size": CAPTURE_RESOLUTION})
+        # Configure primarily for still capture, preview may still work
+        config = picam2.create_still_configuration(main={"size": CAPTURE_RESOLUTION})
         picam2.configure(config)
 
         # Start the preview window using DRM
@@ -156,6 +156,7 @@ def main():
 
         # Start the camera stream
         picam2.start()
+        time.sleep(1) # Add a short delay for camera to initialize
         print("Camera stream and preview started.")
 
         while True: # Loop indefinitely
