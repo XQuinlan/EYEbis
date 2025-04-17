@@ -147,8 +147,8 @@ def main():
         # Initialize the camera (outside the loop)
         print("Initializing camera...")
         picam2 = Picamera2()
-        # Configure primarily for still capture, preview may still work
-        config = picam2.create_still_configuration(main={"size": CAPTURE_RESOLUTION})
+        # Configure for preview and capture
+        config = picam2.create_preview_configuration(main={"size": CAPTURE_RESOLUTION})
         picam2.configure(config)
 
         # Start the preview window using DRM
