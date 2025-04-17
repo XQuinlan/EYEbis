@@ -2,11 +2,11 @@
 
 """
 Script for Raspberry Pi 5 to capture an image, classify it using a TFLite model,
-and activate a buzzer if contamination is detected.
+and print the classification result.
 """
 
 import time
-import RPi.GPIO as GPIO
+# import RPi.GPIO as GPIO # Removed GPIO import
 from picamera2 import Picamera2
 from PIL import Image
 import numpy as np
@@ -14,21 +14,21 @@ import tflite_runtime.interpreter as tflite
 import sys # Import sys for error handling
 
 # --- Configuration ---
-BUZZER_PIN = 18         # GPIO pin connected to the buzzer (BCM numbering)
+# BUZZER_PIN = 18         # GPIO pin connected to the buzzer (BCM numbering) # Removed Buzzer Pin
 IMAGE_SIZE = (224, 224) # Target image size for the model
 MODEL_PATH = "best_mobilenet_model_quant_float16.tflite" # Path to the TensorFlow Lite model file
 CLASS_LABELS = ["clean", "contaminated"] # Labels corresponding to model output indices
 NUM_THREADS = 4         # Number of threads for TFLite interpreter (adjust as needed for Pi 5)
 CAPTURE_RESOLUTION = (640, 480) # Initial capture resolution
-BUZZ_DURATION = 0.5     # Duration in seconds to activate the buzzer
+# BUZZ_DURATION = 0.5     # Duration in seconds to activate the buzzer # Removed Buzz Duration
 
-# --- GPIO Setup ---
-def setup_gpio():
-    """Initializes GPIO settings."""
-    print("Setting up GPIO...")
-    GPIO.setmode(GPIO.BCM)       # Use Broadcom pin numbering
-    GPIO.setup(BUZZER_PIN, GPIO.OUT, initial=GPIO.LOW) # Set buzzer pin as output, initially low
-    GPIO.setwarnings(False)      # Disable GPIO warnings
+# --- GPIO Setup --- # Removed GPIO setup function
+# def setup_gpio():
+#     """Initializes GPIO settings."""
+#     print("Setting up GPIO...")
+#     GPIO.setmode(GPIO.BCM)       # Use Broadcom pin numbering
+#     GPIO.setup(BUZZER_PIN, GPIO.OUT, initial=GPIO.LOW) # Set buzzer pin as output, initially low
+#     GPIO.setwarnings(False)      # Disable GPIO warnings
 
 # --- Camera Operations ---
 def capture_image(picam2):
@@ -116,36 +116,42 @@ def run_inference(input_data):
     print("Inference complete.")
     return output_data
 
-# --- Decision Making and Buzzer Control ---
+# --- Decision Making ---
 def process_prediction(prediction):
-    """Analyzes the prediction and controls the buzzer."""
+    """Analyzes the prediction and prints the result."""
     # Get the index of the highest probability score
     predicted_index = np.argmax(prediction[0])
 
     # Ensure the index is within the bounds of our labels
     if predicted_index >= len(CLASS_LABELS):
         print(f"Error: Predicted index {predicted_index} is out of bounds for labels {CLASS_LABELS}")
+        # Instead of returning, maybe print an error state or default value
+        print("Classification: Unknown")
         return
 
     predicted_label = CLASS_LABELS[predicted_index]
-    confidence = prediction[0][predicted_index]
+    confidence = prediction[0][predicted_index] # Confidence is still available if needed later
 
-    print(f"Predicted label: {predicted_label} (Confidence: {confidence:.2f})")
+    # Print the classification result directly
+    print(f"{predicted_label}")
 
-    # Activate buzzer if "contaminated"
-    if predicted_label == "contaminated":
-        print("Contamination detected! Activating buzzer.")
-        GPIO.output(BUZZER_PIN, GPIO.HIGH) # Turn buzzer ON
-        time.sleep(BUZZ_DURATION)          # Keep it on for the specified duration
-        GPIO.output(BUZZER_PIN, GPIO.LOW)  # Turn buzzer OFF
-        print("Buzzer deactivated.")
-    else:
-        print("Classification result: Clean.")
+    # Removed buzzer logic
+    # print(f"Predicted label: {predicted_label} (Confidence: {confidence:.2f})")
+    #
+    # # Activate buzzer if "contaminated"
+    # if predicted_label == "contaminated":
+    #     print("Contamination detected! Activating buzzer.")
+    #     GPIO.output(BUZZER_PIN, GPIO.HIGH) # Turn buzzer ON
+    #     time.sleep(BUZZ_DURATION)          # Keep it on for the specified duration
+    #     GPIO.output(BUZZER_PIN, GPIO.LOW)  # Turn buzzer OFF
+    #     print("Buzzer deactivated.")
+    # else:
+    #     print("Classification result: Clean.")
 
 # --- Main Execution ---
 def main():
     """Main function to orchestrate the process."""
-    setup_gpio()
+    # setup_gpio() # Removed GPIO setup call
     picam2 = None # Initialize picam2 variable
 
     try:
@@ -160,13 +166,13 @@ def main():
         # Run inference
         prediction = run_inference(input_data)
 
-        # Make decision and control buzzer
+        # Make decision and print result
         process_prediction(prediction)
 
     except ImportError as e:
         print(f"Error importing necessary libraries: {e}")
-        print("Please ensure RPi.GPIO, Picamera2, PIL, numpy, and tflite_runtime are installed.")
-        print("Example installation: pip install RPi.GPIO picamera2 Pillow numpy tflite-runtime")
+        print("Please ensure Picamera2, PIL, numpy, and tflite_runtime are installed.") # Removed RPi.GPIO from message
+        print("Example installation: pip install picamera2 Pillow numpy tflite-runtime")
     except FileNotFoundError:
         print(f"Error: The model file '{MODEL_PATH}' was not found.")
         print("Please ensure the TFLite model is in the same directory as the script or provide the correct path.")
@@ -176,8 +182,8 @@ def main():
         print(f"An unexpected error occurred: {e}")
     finally:
         # --- Cleanup ---
-        print("Cleaning up GPIO...")
-        GPIO.cleanup() # Reset GPIO pin configuration
+        # print("Cleaning up GPIO...") # Removed GPIO cleanup message
+        # GPIO.cleanup() # Reset GPIO pin configuration # Removed GPIO cleanup call
         if picam2 and picam2.is_open:
              picam2.close() # Ensure camera resources are released if it was opened
              print("Camera closed.")
