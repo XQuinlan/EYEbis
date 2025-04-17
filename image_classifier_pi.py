@@ -24,6 +24,30 @@ NUM_THREADS = 4         # Number of threads for TFLite interpreter (adjust as ne
 CAPTURE_RESOLUTION = (640, 480) # Initial capture resolution
 # BUZZ_DURATION = 0.5     # Duration in seconds to activate the buzzer # Removed Buzz Duration
 
+# --- ASCII Art Definitions ---
+ASCII_CLEAN = r"""
+  #####  #       ######   ##   # ######
+ #     # #       #       #  #  # #
+ #       #       #####  #    # # #####
+ #       #       #      ###### # #
+ #     # #       #      #    # # #
+  #####  ####### ###### #    # # ######
+"""
+
+ASCII_CONTAMINATED = r"""
+  #####  ####### ####### ######   ##   # ###### ####### ####### ######   #####
+ #     #    #       #    #     # #  #  # #          #       #    #     # #     #
+ #          #       #    #     # #    # # #####      #       #    #     # #
+ #          #       #    ######  ###### # #          #       #    ######   #####
+ #     #    #       #    #   #   #    # # #          #       #    #   #         #
+  #####     #       #    #    #  #    # # ######     #       #    #    #  #####
+"""
+
+LABEL_TO_ART = {
+    "clean": ASCII_CLEAN,
+    "contaminated": ASCII_CONTAMINATED
+}
+
 # --- GPIO Setup --- # Removed GPIO setup function
 # def setup_gpio():
 #     """Initializes GPIO settings."""
@@ -106,7 +130,7 @@ def run_inference(input_data):
 
 # --- Decision Making ---
 def process_prediction(prediction):
-    """Analyzes the prediction and prints the result."""
+    """Analyzes the prediction and prints the result as ASCII art."""
     # Get the index of the highest probability score
     predicted_index = np.argmax(prediction[0])
 
@@ -120,8 +144,12 @@ def process_prediction(prediction):
     predicted_label = CLASS_LABELS[predicted_index]
     confidence = prediction[0][predicted_index] # Confidence is still available if needed later
 
-    # Print the classification result directly
-    print(f"{predicted_label}")
+    # Print the corresponding ASCII art
+    print(LABEL_TO_ART.get(predicted_label, f"Unknown Label: {predicted_label}"))
+    print(f"(Confidence: {confidence:.2f})") # Optionally print confidence below the art
+
+    # Removed simple label print
+    # print(f"{predicted_label}")
 
     # Removed buzzer logic
     # print(f"Predicted label: {predicted_label} (Confidence: {confidence:.2f})")
