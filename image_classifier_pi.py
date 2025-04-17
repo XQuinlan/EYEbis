@@ -3,11 +3,13 @@
 """
 Script for Raspberry Pi 5 to capture an image when Enter is pressed,
 classify it using a TFLite model, print the result, and show a live preview using DRM.
+Uses configuration similar to dataset_creator.
 """
 
 import time
 # import RPi.GPIO as GPIO # Removed GPIO import
-from picamera2 import Picamera2, Preview # Added Preview
+from picamera2 import Picamera2, Preview
+from libcamera import Transform # Added Transform
 # from picamera2.previews.qt import QtGlPreview # Removed Qt preview
 # from PyQt5.QtWidgets import QApplication # Removed QApplication
 from PIL import Image
@@ -22,6 +24,7 @@ MODEL_PATH = "best_mobilenet_model_quant_float16.tflite" # Path to the TensorFlo
 CLASS_LABELS = ["clean", "contaminated"] # Labels corresponding to model output indices
 NUM_THREADS = 4         # Number of threads for TFLite interpreter (adjust as needed for Pi 5)
 CAPTURE_RESOLUTION = (640, 480) # Initial capture resolution
+ROTATION = 0            # Camera rotation (0, 90, 180, 270)
 # BUZZ_DURATION = 0.5     # Duration in seconds to activate the buzzer # Removed Buzz Duration
 
 # --- GPIO Setup --- # Removed GPIO setup function
@@ -147,14 +150,30 @@ def main():
         # Initialize the camera (outside the loop)
         print("Initializing camera...")
         picam2 = Picamera2()
-        # Configure for preview and capture
-        config = picam2.create_preview_configuration(main={"size": CAPTURE_RESOLUTION})
+
+        # Define transform based on rotation
+        transform = Transform()
+        if ROTATION == 180:
+            transform = Transform(hflip=1, vflip=1)
+        # Add other rotation cases if needed (90, 270)
+
+        # Configure using still config with preview options from capture_images.py
+        config = picam2.create_still_configuration(
+            main={"size": CAPTURE_RESOLUTION},
+            lores={"size": (640, 480)}, # Low-res stream for preview
+            display="lores",             # Use low-res stream for display
+            transform=transform,         # Apply rotation/flip transform
+            buffer_count=3             # Buffer count like in capture_images
+        )
+        print("Configuring camera...")
         picam2.configure(config)
 
         # Start the preview window using DRM
+        print("Starting DRM preview...")
         picam2.start_preview(Preview.DRM)
 
         # Start the camera stream
+        print("Starting camera stream...")
         picam2.start()
         time.sleep(1) # Add a short delay for camera to initialize
         print("Camera stream and preview started.")
