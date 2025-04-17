@@ -16,7 +16,7 @@ import sys # Import sys for error handling
 # --- Configuration ---
 BUZZER_PIN = 18         # GPIO pin connected to the buzzer (BCM numbering)
 IMAGE_SIZE = (224, 224) # Target image size for the model
-MODEL_PATH = "model.tflite" # Path to the TensorFlow Lite model file
+MODEL_PATH = "best_mobilenet_model_quant_float16.tflite" # Path to the TensorFlow Lite model file
 CLASS_LABELS = ["clean", "contaminated"] # Labels corresponding to model output indices
 NUM_THREADS = 4         # Number of threads for TFLite interpreter (adjust as needed for Pi 5)
 CAPTURE_RESOLUTION = (640, 480) # Initial capture resolution

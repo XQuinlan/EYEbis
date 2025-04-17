@@ -6,13 +6,11 @@ import glob
 import time
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 import matplotlib.pyplot as plt
-import seaborn as sns
 
 # --- Configuration ---
 # Select the quantized model to evaluate
-# MODEL_PATH = 'best_mobilenet_model_quant_float16.tflite' 
-MODEL_PATH = 'best_mobilenet_model_quant_int8.tflite'
-TEST_DATA_DIR = 'data/validation' # Use validation set as test set, or create a separate test set
+MODEL_PATH = 'best_mobilenet_model_quant_float16.tflite'
+TEST_DATA_DIR = 'processed_dataset/validation' # Use validation set as test set, or create a separate test set
 INPUT_WIDTH, INPUT_HEIGHT = 224, 224
 NUM_THREADS = 4
 # Class labels must match the order used during training/generation
@@ -60,20 +58,6 @@ def dequantize_output(output_data_raw, output_details):
     else:
         # If output is already float (float32/float16), return as is
         return output_data_raw.astype(np.float32)
-
-def plot_confusion_matrix(cm, class_names, filename='confusion_matrix.png'):
-    """Plots the confusion matrix using seaborn and saves it to a file."""
-    plt.figure(figsize=(8, 6))
-    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", 
-                xticklabels=class_names, yticklabels=class_names)
-    plt.title('Confusion Matrix')
-    plt.ylabel('True Label')
-    plt.xlabel('Predicted Label')
-    plt.tight_layout()
-    plt.savefig(filename)
-    print(f"Confusion matrix saved to {filename}")
-    # plt.show() # Optionally display the plot
-    plt.close()
 
 def evaluate_model():
     # --- Validate Paths ---
@@ -169,9 +153,6 @@ def evaluate_model():
 
     avg_inference_time = np.mean(inference_times) * 1000 # milliseconds
     print(f"\nAverage Inference Time: {avg_inference_time:.2f} ms per image")
-
-    # --- Plot Confusion Matrix ---
-    plot_confusion_matrix(cm, CLASS_LABELS)
 
 if __name__ == '__main__':
     evaluate_model()

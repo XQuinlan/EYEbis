@@ -8,7 +8,7 @@ from tensorflow.keras.models import load_model
 KERAS_MODEL_PATH = 'best_mobilenet_model.keras'
 QUANTIZED_TFLITE_MODEL_PATH_INT8 = 'best_mobilenet_model_quant_int8.tflite'
 QUANTIZED_TFLITE_MODEL_PATH_FLOAT16 = 'best_mobilenet_model_quant_float16.tflite' # Optional path for float16
-VALID_DIR = 'data/validation'
+VALID_DIR = 'processed_dataset/validation'
 IMG_WIDTH, IMG_HEIGHT = 224, 224 # Should match the training input size
 BATCH_SIZE = 1 # Batch size for the representative dataset generator
 NUM_CALIBRATION_STEPS = 100 # Number of samples for representative dataset
@@ -115,6 +115,6 @@ def quantize_model(quant_type='int8'):
 if __name__ == '__main__':
     # --- Choose Quantization Type ---
     # Change this to 'float16' for float16 quantization
-    quantization_type = 'int8' 
+    quantization_type = 'float16'
     
     quantize_model(quantization_type)

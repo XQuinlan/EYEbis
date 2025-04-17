@@ -1,11 +1,24 @@
 import tensorflow as tf
+import os # Keep os import
+
+# --- Force CPU (for debugging GPU issues) ---
+try:
+    # Disable all GPUs
+    tf.config.set_visible_devices([], 'GPU')
+    visible_devices = tf.config.get_visible_devices()
+    for device in visible_devices:
+        assert device.device_type != 'GPU'
+    print("GPU disabled, forcing CPU execution.")
+except Exception as e:
+    print("Could not disable GPU, proceeding anyway. Error:", e)
+# ---------------------------------------------
+
 from tensorflow.keras.applications import MobileNetV2
 from tensorflow.keras.layers import GlobalAveragePooling2D, Dense
 from tensorflow.keras.models import Model
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import ModelCheckpoint
-import os
 import argparse # Import argparse
 
 # Constants - Keep ones not handled by CLI args
@@ -96,7 +109,7 @@ def main(epochs, batch_size, learning_rate, train_dir, valid_dir):
         MODEL_SAVE_PATH,
         monitor='val_accuracy',
         verbose=1,
-        save_best_only=True,
+        save_best_only=False,
         mode='max'
     )
 
@@ -133,7 +146,16 @@ def main(epochs, batch_size, learning_rate, train_dir, valid_dir):
         callbacks=callbacks_list
     )
 
-    print(f"Training complete. Best model saved to {MODEL_SAVE_PATH}")
+    # --- Explicitly save the final model ---
+    print(f"Explicitly saving final model to {MODEL_SAVE_PATH}...")
+    try:
+        model.save(MODEL_SAVE_PATH)
+        print("Model saved successfully.")
+    except Exception as e:
+        print(f"Error saving model explicitly: {e}")
+    # -----------------------------------------
+
+    print(f"Training process finished.") # Changed wording slightly
 
 if __name__ == '__main__':
     # Set up argument parser
