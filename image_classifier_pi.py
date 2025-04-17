@@ -2,12 +2,12 @@
 
 """
 Script for Raspberry Pi 5 to capture an image when Enter is pressed,
-classify it using a TFLite model, print the result, and show a live preview using DRM.
+classify it using a TFLite model, and print the result (no preview).
 """
 
 import time
 # import RPi.GPIO as GPIO # Removed GPIO import
-from picamera2 import Picamera2, Preview # Added Preview
+from picamera2 import Picamera2 # Removed Preview import
 # from picamera2.previews.qt import QtGlPreview # Removed Qt preview
 # from PyQt5.QtWidgets import QApplication # Removed QApplication
 from PIL import Image
@@ -34,9 +34,9 @@ CAPTURE_RESOLUTION = (640, 480) # Initial capture resolution
 
 # --- Camera Operations ---
 def capture_image(picam2):
-    """Captures a single frame from the running Picamera2 stream and returns it as a PIL Image."""
-    print("Capturing image from running stream...")
-    # Capture an image (returns a NumPy array) - camera is already running
+    """Captures a single frame from the camera and returns it as a PIL Image."""
+    print("Capturing image...")
+    # Capture an image (returns a NumPy array) - camera is started just before this call
     image_array = picam2.capture_array()
     print("Image captured.")
 
@@ -138,38 +138,38 @@ def process_prediction(prediction):
 
 # --- Main Execution ---
 def main():
-    """Main function to orchestrate the process in a loop with DRM preview."""
+    """Main function to orchestrate the process in a loop (no preview)."""
     # setup_gpio() # Removed GPIO setup call
     # app = QApplication(sys.argv) # Removed Qt application initialization
     picam2 = None # Initialize picam2 variable
 
     try:
-        # Initialize the camera (outside the loop)
-        print("Initializing camera...")
+        # Initialize the camera object (outside the loop)
+        print("Initializing camera object...")
         picam2 = Picamera2()
-        # Configure for preview and capture
-        config = picam2.create_preview_configuration(main={"size": CAPTURE_RESOLUTION})
-        picam2.configure(config)
-
-        # Start the preview window using DRM
-        picam2.start_preview(Preview.DRM)
-
-        # Start the camera stream
-        picam2.start()
-        time.sleep(1) # Add a short delay for camera to initialize
-        print("Camera stream and preview started.")
 
         while True: # Loop indefinitely
-            input("Press Enter to capture and classify...") # Wait for user input in the terminal
+            input("Press Enter to capture and classify...") # Wait for user input
 
-            # Capture and process image
-            pil_image = capture_image(picam2)
+            # --- Configure and Start Camera for Capture ---
+            print("Configuring camera for capture...")
+            config = picam2.create_still_configuration(main={"size": CAPTURE_RESOLUTION})
+            picam2.configure(config)
+            print("Starting camera...")
+            picam2.start()
+            time.sleep(1) # Allow camera to adjust focus, exposure, etc.
+
+            # --- Capture and Process ---
+            pil_image = capture_image(picam2) # Capture the image
+            print("Stopping camera...")
+            picam2.stop() # Stop the camera stream after capture
+
             input_data = preprocess_image(pil_image)
 
-            # Run inference
+            # --- Run Inference ---
             prediction = run_inference(input_data)
 
-            # Make decision and print result
+            # --- Process Prediction ---
             process_prediction(prediction)
 
     except KeyboardInterrupt:
@@ -184,16 +184,24 @@ def main():
         print("Please ensure the TFLite model is in the same directory as the script or provide the correct path.")
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
+        # Add specific check for common camera errors
+        if "Camera component couldn't be enabled" in str(e) or "failed to import fd" in str(e):
+             print("Hint: Ensure the camera is connected and enabled in raspi-config.")
+        elif "ENOSPC" in str(e):
+             print("Hint: Camera error ENOSPC: Out of resources. Try rebooting the Pi.")
+
     finally:
         # --- Cleanup ---
         # print("Cleaning up GPIO...") # Removed GPIO cleanup message
         # GPIO.cleanup() # Reset GPIO pin configuration # Removed GPIO cleanup call
         if picam2:
-            if picam2.preview_running:
-                 print("Stopping preview...")
-                 picam2.stop_preview()
+            # Removed preview check
+            # if picam2.preview_running:
+            #      print("Stopping preview...")
+            #      picam2.stop_preview()
+            # Ensure camera is stopped if the loop was interrupted while it was running
             if picam2.started:
-                 print("Stopping camera stream...")
+                 print("Ensuring camera stream is stopped...")
                  picam2.stop()
             # Close might implicitly stop/release, but explicit is good practice
             # picam2.close() # Ensure camera resources are released if it was opened
