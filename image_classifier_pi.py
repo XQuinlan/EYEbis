@@ -10,7 +10,7 @@ import time
 # import RPi.GPIO as GPIO # Removed GPIO import
 from picamera2 import Picamera2, Preview
 from libcamera import Transform # Added Transform
-from picamera2.previews.qt import QtGlPreview # Added back Qt preview
+# from picamera2.previews.qt import QtGlPreview # Added back Qt preview # Removed this line
 from PyQt5.QtWidgets import QApplication # Added back QApplication
 from PIL import Image
 import numpy as np
