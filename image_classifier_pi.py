@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 
 """
-Script for Raspberry Pi 5 to capture an image, classify it using a TFLite model,
-and print the classification result.
+Script for Raspberry Pi 5 to capture an image when Enter is pressed,
+classify it using a TFLite model, print the result, and show a live preview.
 """
 
 import time
 # import RPi.GPIO as GPIO # Removed GPIO import
-from picamera2 import Picamera2
+from picamera2 import Picamera2, Preview # Added Preview
+from picamera2.previews.qt import QtGlPreview # Or QtPreview
+from PyQt5.QtWidgets import QApplication # Added QApplication
 from PIL import Image
 import numpy as np
 import tflite_runtime.interpreter as tflite
-import sys # Import sys for error handling
+import sys # Import sys for error handling and QApplication
 
 # --- Configuration ---
 # BUZZER_PIN = 18         # GPIO pin connected to the buzzer (BCM numbering) # Removed Buzzer Pin
@@ -32,30 +34,16 @@ CAPTURE_RESOLUTION = (640, 480) # Initial capture resolution
 
 # --- Camera Operations ---
 def capture_image(picam2):
-    """Captures a single frame using Picamera2 and returns it as a PIL Image."""
-    print("Capturing image...")
-    # Configure the camera for still capture
-    config = picam2.create_still_configuration(main={"size": CAPTURE_RESOLUTION})
-    picam2.configure(config)
-
-    # Start the camera
-    picam2.start()
-    time.sleep(1) # Allow camera to adjust
-
-    # Capture an image (returns a NumPy array)
+    """Captures a single frame from the running Picamera2 stream and returns it as a PIL Image."""
+    print("Capturing image from running stream...")
+    # Capture an image (returns a NumPy array) - camera is already running
     image_array = picam2.capture_array()
-
-    # Stop the camera
-    picam2.stop()
     print("Image captured.")
 
-    # Convert the NumPy array (BGR format from Picamera2) to a PIL Image (RGB)
-    # Picamera2 by default captures in a format PIL can understand directly if BGR=False is used in capture
-    # If issues arise, explicit conversion might be needed: Image.fromarray(cv2.cvtColor(image_array, cv2.COLOR_BGR2RGB))
-    # Assuming direct conversion works for standard formats:
+    # Convert the NumPy array to a PIL Image (RGB)
     pil_image = Image.fromarray(image_array)
 
-    # Ensure image is RGB if it has an alpha channel
+    # Ensure image is RGB if it has an alpha channel (rare for direct capture)
     if pil_image.mode == 'RGBA':
         pil_image = pil_image.convert('RGB')
 
@@ -150,17 +138,28 @@ def process_prediction(prediction):
 
 # --- Main Execution ---
 def main():
-    """Main function to orchestrate the process in a loop."""
+    """Main function to orchestrate the process in a loop with preview."""
     # setup_gpio() # Removed GPIO setup call
+    app = QApplication(sys.argv) # Initialize Qt application
     picam2 = None # Initialize picam2 variable
 
     try:
         # Initialize the camera (outside the loop)
         print("Initializing camera...")
         picam2 = Picamera2()
+        # Configure for preview and capture
+        config = picam2.create_preview_configuration(main={"size": CAPTURE_RESOLUTION})
+        picam2.configure(config)
+
+        # Start the preview window (runs in its own thread)
+        picam2.start_preview(Preview.QTGL)
+
+        # Start the camera stream
+        picam2.start()
+        print("Camera stream and preview started.")
 
         while True: # Loop indefinitely
-            input("Press Enter to capture and classify...") # Wait for user input
+            input("Press Enter to capture and classify...") # Wait for user input in the terminal
 
             # Capture and process image
             pil_image = capture_image(picam2)
@@ -176,8 +175,9 @@ def main():
         print("\nExecution interrupted by user.") # Handle Ctrl+C gracefully
     except ImportError as e:
         print(f"Error importing necessary libraries: {e}")
-        print("Please ensure Picamera2, PIL, numpy, and tflite_runtime are installed.") # Removed RPi.GPIO from message
-        print("Example installation: pip install picamera2 Pillow numpy tflite-runtime")
+        # Added PyQt5 to the message
+        print("Please ensure Picamera2, PyQt5, PIL, numpy, and tflite_runtime are installed.")
+        print("Example installation: pip install picamera2[qt] Pillow numpy tflite-runtime")
     except FileNotFoundError:
         print(f"Error: The model file '{MODEL_PATH}' was not found.")
         print("Please ensure the TFLite model is in the same directory as the script or provide the correct path.")
@@ -187,9 +187,17 @@ def main():
         # --- Cleanup ---
         # print("Cleaning up GPIO...") # Removed GPIO cleanup message
         # GPIO.cleanup() # Reset GPIO pin configuration # Removed GPIO cleanup call
-        if picam2 and picam2.is_open:
-             picam2.close() # Ensure camera resources are released if it was opened
-             print("Camera closed.")
+        if picam2:
+            if picam2.preview_running:
+                 print("Stopping preview...")
+                 picam2.stop_preview()
+            if picam2.started:
+                 print("Stopping camera stream...")
+                 picam2.stop()
+            # Close might implicitly stop/release, but explicit is good practice
+            # picam2.close() # Ensure camera resources are released if it was opened
+            print("Camera closed/stopped.")
+        # app.quit() # Optional: explicitly quit Qt app if needed
         print("Script finished.")
 
 if __name__ == "__main__":
