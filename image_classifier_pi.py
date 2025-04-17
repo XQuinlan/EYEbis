@@ -168,9 +168,9 @@ def main():
         print("Configuring camera...")
         picam2.configure(config)
 
-        # Start the preview window using QtGL
+        # Start the preview window using QtGL enum (like capture_images.py)
         print("Starting Qt preview...")
-        picam2.start_preview(Preview.QTGL)
+        picam2.start_preview(Preview.QTGL) # Use enum like capture_images.py
 
         # Start the camera stream
         print("Starting camera stream...")
